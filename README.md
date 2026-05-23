@@ -1,2 +1,0 @@
-# Urgut-Today
-Urgut Today

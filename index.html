@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Urgut Today</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800&display=swap');
+:root{--black:#0a0a0a;--white:#ffffff;--gray:#1a1a1a;--gray2:#2a2a2a;--red:#e63946;--green:#2ecc71;--muted:#888;}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{background:var(--black);color:var(--white);font-family:'Nunito',sans-serif;min-height:100vh;overflow-x:hidden;}
+#splash{position:fixed;inset:0;background:var(--black);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity 0.5s;}
+#splash.hide{opacity:0;pointer-events:none;}
+.sp-icon{animation:pop 0.7s cubic-bezier(0.34,1.56,0.64,1) both;}
+.sp-title{font-family:'Bebas Neue',sans-serif;font-size:44px;letter-spacing:4px;margin-top:14px;animation:fup 0.5s 0.25s both;}
+.sp-sub{color:var(--muted);font-size:13px;margin-top:6px;animation:fup 0.5s 0.4s both;}
+@keyframes pop{from{transform:scale(0.2);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes fup{from{transform:translateY(16px);opacity:0}to{transform:translateY(0);opacity:1}}
+#app{display:none;flex-direction:column;min-height:100vh;}
+#app.show{display:flex;}
+  .tabbar{position:fixed;bottom:0;left:0;right:0;background:#111;border-top:1px solid #2a2a2a;display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom,0px);}
+.tb{flex:1;padding:12px 4px 10px;background:none;border:none;color:var(--muted);font-family:'Nunito',sans-serif;font-size:10px;font-weight:800;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;transition:color 0.2s;}
+.tb.on{color:var(--white);}
+.tb svg{width:22px;height:22px;}
+.page{display:none;flex-direction:column;padding-bottom:80px;animation:pin 0.3s ease;}
+.page.on{display:flex;}
+@keyframes pin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.hdr{background:var(--black);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;border-bottom:1px solid #222;}
+.hdr-left{display:flex;align-items:center;gap:10px;}
+.hdr-left svg{width:30px;height:30px;}
+.hdr-title{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;}
+.live-badge{background:var(--red);color:#fff;font-size:11px;font-weight:800;padding:4px 10px;border-radius:20px;animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.6}}
+.stitle{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1px;padding:18px 18px 10px;color:#ddd;}
+.card{margin:0 14px 14px;background:var(--gray);border-radius:16px;padding:18px;border:1px solid #2a2a2a;}
+.upbtn{width:100%;padding:22px 16px;background:var(--gray2);border:2px dashed #3a3a3a;border-radius:14px;color:var(--white);font-family:'Nunito',sans-serif;font-size:15px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;}
+.upbtn-icon{font-size:36px;}
+.upbtn-sub{font-size:12px;color:var(--muted);}
+.prev-wrap{display:none;margin-top:12px;border-radius:12px;overflow:hidden;position:relative;background:#111;}
+.prev-wrap.show{display:block;}
+.prev-wrap video,.prev-wrap img{width:100%;max-height:200px;object-fit:contain;display:block;}
+.prev-rm{position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.75);border:none;color:#fff;border-radius:50%;width:30px;height:30px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.prev-name{padding:8px 12px;font-size:12px;color:var(--muted);background:#0d0d0d;}
+.flabel{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin:14px 0 6px;}
+.finput{width:100%;background:var(--gray2);border:1px solid #3a3a3a;border-radius:10px;color:var(--white);font-family:'Nunito',sans-serif;font-size:14px;padding:12px 14px;outline:none;transition:border-color 0.2s;resize:none;}
+.finput:focus{border-color:#666;}
+.finput::placeholder{color:#444;}
+.sbtn{width:100%;margin-top:16px;background:var(--white);color:var(--black);border:none;border-radius:12px;font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;padding:14px;cursor:pointer;}
+.sbtn:disabled{opacity:0.4;}
+.succ{display:none;margin:0 14px;background:#0a2b18;border:1px solid var(--green);border-radius:12px;padding:14px 16px;color:var(--green);font-weight:700;font-size:14px;align-items:center;gap:10px;}
+.succ.show{display:flex;}
+  .login-page{min-height:calc(100vh - 80px);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;}
+.login-logo{text-align:center;margin-bottom:28px;}
+.login-logo h2{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:2px;margin-top:10px;}
+.login-logo p{font-size:12px;color:var(--muted);margin-top:4px;}
+.login-box{width:100%;max-width:360px;background:var(--gray);border-radius:18px;padding:24px;border:1px solid #2a2a2a;}
+.lbtn{width:100%;margin-top:18px;background:var(--white);color:var(--black);border:none;border-radius:12px;font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;padding:14px;cursor:pointer;}
+.lerr{display:none;margin-top:10px;background:#2b0d0d;border:1px solid var(--red);border-radius:8px;padding:10px;color:var(--red);font-size:13px;font-weight:700;text-align:center;}
+.lerr.show{display:block;}
+.apanel{display:none;flex-direction:column;padding-bottom:80px;}
+.apanel.show{display:flex;}
+.ahdr{background:var(--gray);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #2a2a2a;position:sticky;top:0;z-index:50;}
+.ahdr h2{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1px;}
+.out-btn{background:#2b0d0d;border:1px solid var(--red);color:var(--red);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px;}
+.scard{background:var(--gray);border-radius:14px;padding:14px;border:1px solid #2a2a2a;text-align:center;}
+.snum{font-family:'Bebas Neue',sans-serif;font-size:38px;line-height:1;}
+.slabel{font-size:11px;color:var(--muted);margin-top:4px;font-weight:700;}
+.logo-box{margin:0 14px 14px;background:var(--gray);border-radius:16px;padding:18px;border:1px solid #2a2a2a;}
+.logo-box h3{font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:1px;margin-bottom:14px;color:#ddd;}
+.ltype-btns{display:flex;gap:8px;margin-bottom:14px;}
+.ltype-btn{flex:1;padding:10px;background:var(--gray2);border:1px solid #3a3a3a;color:var(--muted);border-radius:10px;font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;cursor:pointer;}
+.ltype-btn.on{background:var(--white);color:var(--black);border-color:var(--white);}
+.logo-prev{margin-top:12px;padding:16px;background:#111;border-radius:10px;text-align:center;min-height:70px;display:flex;align-items:center;justify-content:center;}
+.logo-prev-txt{font-family:'Bebas Neue',sans-serif;font-size:26px;display:flex;align-items:center;gap:8px;}
+.save-btn{width:100%;margin-top:12px;background:var(--white);color:var(--black);border:none;border-radius:12px;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;padding:12px;cursor:pointer;}
+.cpbox{margin:0 14px 14px;background:var(--gray);border-radius:16px;padding:18px;border:1px solid #2a2a2a;}
+.cpbox h3{font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:1px;margin-bottom:14px;color:#ddd;}
+.cp-btn{width:100%;margin-top:12px;background:var(--gray2);color:var(--white);border:1px solid #444;border-radius:12px;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1px;padding:12px;cursor:pointer;}
+.pw-wrap{position:relative;}
+.pw-eye{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;}
+.rlist{padding:0 14px 14px;}
+.rcard{background:var(--gray);border-radius:14px;padding:14px;border:1px solid #2a2a2a;margin-bottom:10px;}
+.rmeta{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.rfrom{font-size:13px;font-weight:700;color:#ddd;}
+.rtime{font-size:11px;color:var(--muted);}
+.rcmt{font-size:13px;color:#bbb;margin-bottom:10px;line-height:1.5;}
+.rfile{background:#111;border-radius:8px;padding:8px 12px;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.ract{display:flex;gap:8px;}
+.rbtn{flex:1;padding:10px;border:none;border-radius:10px;font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;cursor:pointer;}
+.rbtn.ok{background:var(--green);color:#051a0c;}
+.rbtn.no{background:#2b0d0d;color:var(--red);}
+.toast{position:fixed;bottom:88px;left:50%;transform:translateX(-50%) translateY(16px);background:#222;color:#fff;padding:11px 20px;border-radius:30px;font-size:13px;font-weight:700;opacity:0;transition:all 0.3s;z-index:9998;white-space:nowrap;border:1px solid #3a3a3a;pointer-events:none;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.spin{display:inline-block;width:16px;height:16px;border:2px solid #555;border-top-color:#fff;border-radius:50%;animation:sp 0.6s linear infinite;vertical-align:middle;margin-right:6px;}
+@keyframes sp{to{transform:rotate(360deg)}}
+.hidden{display:none!important;}
+</style>
+</head>
+<body>
+  <div id="splash">
+  <div class="sp-icon">
+    <svg width="90" height="90" viewBox="0 0 100 100" fill="none">
+      <rect width="100" height="100" rx="22" fill="#1a1a1a"/>
+      <path d="M76 24L18 47L41 53L52 80L61 57L76 24Z" fill="white"/>
+      <path d="M41 53L52 80L61 57" stroke="#1a1a1a" stroke-width="2.5" stroke-linejoin="round"/>
+      <circle cx="82" cy="20" r="3" fill="white" opacity="0.5"/>
+      <circle cx="16" cy="28" r="2" fill="white" opacity="0.4"/>
+    </svg>
+  </div>
+  <div class="sp-title">URGUT TODAY</div>
+  <div class="sp-sub">Xabar yuboring — biz e'lon qilamiz</div>
+</div>
+<div class="toast" id="toast"></div>
+<div id="app">
+  <div class="page on" id="pg-submit">
+    <div class="hdr">
+      <div class="hdr-left">
+        <svg viewBox="0 0 100 100" fill="none">
+          <rect width="100" height="100" rx="22" fill="#1a1a1a"/>
+          <path d="M76 24L18 47L41 53L52 80L61 57L76 24Z" fill="white"/>
+          <path d="M41 53L52 80L61 57" stroke="#1a1a1a" stroke-width="2" stroke-linejoin="round"/>
+        </svg>
+        <span class="hdr-title">URGUT TODAY</span>
+      </div>
+      <span class="live-badge">● LIVE</span>
+    </div>
+    <div class="stitle">📤 Video / Rasm Yuborish</div>
+    <div class="card">
+      <button class="upbtn" id="upbtn" onclick="openFilePicker()">
+        <span class="upbtn-icon">🎬</span>
+        <span>Video yoki Rasm tanlang</span>
+        <span class="upbtn-sub">MP4 · MOV · AVI · JPG · PNG qabul qilinadi</span>
+      </button>
+      <input type="file" id="fileInput" accept="video/*,image/*" style="display:none" onchange="onFileChange(this)">
+      <div class="prev-wrap" id="prevWrap">
+        <button class="prev-rm" onclick="clearFile()">✕</button>
+        <video id="vidPrev" controls playsinline style="display:none"></video>
+        <img id="imgPrev" style="display:none" alt="preview">
+        <div class="prev-name" id="prevName"></div>
+      </div>
+      <div class="flabel">Izoh (Ixtiyoriy)</div>
+      <textarea class="finput" id="comment" rows="3" placeholder="Voqea haqida qisqacha yozing..."></textarea>
+      <button class="sbtn" id="sbtn" onclick="doSubmit()">✈️ ADMINGA YUBORISH</button>
+    </div>
+    <div class="succ" id="succMsg">
+      <span style="font-size:22px">✅</span>
+      <div>
+        <div>Muvaffaqiyatli yuborildi!</div>
+        <div style="font-size:12px;font-weight:400;color:#aaa;margin-top:3px">Admin ko'rib chiqadi va kanalga joylashtiradi</div>
+      </div>
+    </div>
+  </div>
+  <div class="page" id="pg-admin">
+    <div id="loginWrap">
+      <div class="login-page">
+        <div class="login-logo">
+          <svg width="60" height="60" viewBox="0 0 100 100" fill="none">
+            <rect width="100" height="100" rx="22" fill="#1a1a1a"/>
+            <path d="M76 24L18 47L41 53L52 80L61 57L76 24Z" fill="white"/>
+            <path d="M41 53L52 80L61 57" stroke="#1a1a1a" stroke-width="2" stroke-linejoin="round"/>
+          </svg>
+          <h2>ADMIN PANEL</h2>
+          <p>Urgut Today boshqaruv tizimi</p>
+        </div>
+        <div class="login-box">
+          <div class="flabel">Login</div>
+          <input class="finput" type="text" id="lu" placeholder="Login" autocomplete="off" autocapitalize="off">
+          <div class="flabel" style="margin-top:12px">Parol</div>
+          <div class="pw-wrap">
+            <input class="finput" type="password" id="lp" placeholder="Parol" style="padding-right:44px" autocomplete="off">
+            <button class="pw-eye" onclick="togglePw('lp',this)">👁</button>
+          </div>
+          <div class="lerr" id="lerr">Login yoki parol noto'g'ri!</div>
+          <button class="lbtn" onclick="doLogin()">🔐 KIRISH</button>
+        </div>
+      </div>
+    </div>
+    <div class="apanel" id="apanel">
+      <div class="ahdr">
+        <h2>⚙️ BOSHQARUV</h2>
+        <button class="out-btn" onclick="doLogout()">CHIQISH</button>
+      </div>
+      <div class="stats">
+        <div class="scard"><div class="snum" id="sTot">0</div><div class="slabel">Jami So'rovlar</div></div>
+        <div class="scard"><div class="snum" id="sPnd" style="color:#f39c12">0</div><div class="slabel">Kutayotgan</div></div>
+      </div>
+      <div class="logo-box">
+        <h3>🎨 LOGO SOZLAMALARI</h3>
+        <div class="ltype-btns">
+          <button class="ltype-btn on" id="ltxt-btn" onclick="setLogoMode('text')">Matn</button>
+          <button class="ltype-btn" id="limg-btn" onclick="setLogoMode('img')">Rasm</button>
+        </div>
+        <div id="ltxt-wrap">
+          <div class="flabel">Logo matni</div>
+          <input class="finput" type="text" id="ltxt" value="URGUT TODAY" oninput="renderLogoPrev()">
+        </div>
+        <div id="limg-wrap" class="hidden">
+          <div class="flabel">Logo rasmi</div>
+          <button class="upbtn" style="padding:14px" onclick="openLogoPicker()">
+            <span>📁 Rasm tanlang</span>
+          </button>
+          <input type="file" id="logoFile" accept="image/*" style="display:none" onchange="onLogoFile(this)">
+        </div>
+        <div class="logo-prev" id="logoPrev">
+          <div class="logo-prev-txt">
+            <svg width="22" height="22" viewBox="0 0 100 100" fill="none">
+              <path d="M76 24L18 47L41 53L52 80L61 57L76 24Z" fill="white"/>
+            </svg>
+            URGUT TODAY
+          </div>
+        </div>
+        <button class="save-btn" onclick="saveLogo()">💾 SAQLASH</button>
+      </div>
+      <div class="cpbox">
+        <h3>🔑 KIRISH MA'LUMOTLARINI O'ZGARTIRISH</h3>
+        <div class="flabel">Yangi Login</div>
+        <input class="finput" type="text" id="nlogin" placeholder="Yangi login" autocapitalize="off">
+        <div class="flabel" style="margin-top:12px">Yangi Parol</div>
+        <div class="pw-wrap">
+          <input class="finput" type="password" id="npass" placeholder="Yangi parol" style="padding-right:44px">
+          <button class="pw-eye" onclick="togglePw('npass',this)">👁</button>
+        </div>
+        <div class="flabel" style="margin-top:12px">Parolni Tasdiqlang</div>
+        <div class="pw-wrap">
+          <input class="finput" type="password" id="npass2" placeholder="Qayta kiriting" style="padding-right:44px">
+          <button class="pw-eye" onclick="togglePw('npass2',this)">👁</button>
+        </div>
+        <button class="cp-btn" onclick="changePass()">🔄 YANGILASH</button>
+      </div>
+      <div class="stitle">📥 Kelgan So'rovlar</div>
+      <div class="rlist" id="rlist"></div>
+    </div>
+  </div>
+</div>
+<div class="tabbar">
+  <button class="tb on" id="tb0" onclick="showPage('submit',0)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+    </svg>
+    <span>Yuborish</span>
+  </button>
+  <button class="tb" id="tb1" onclick="showPage('admin',1)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+    </svg>
+    <span>Admin</span>
+  </button>
+</div>
+  <script>
+function getCreds(){
+  try{return JSON.parse(localStorage.getItem('ut_cr'))||{l:'NarzullayevDilshod',p:'dilshod0101uzb'};}
+  catch(e){return{l:'NarzullayevDilshod',p:'dilshod0101uzb'};}
+}
+function saveCreds(l,p){localStorage.setItem('ut_cr',JSON.stringify({l,p}));}
+function getReqs(){try{return JSON.parse(localStorage.getItem('ut_reqs'))||[];}catch(e){return[];}}
+function saveReqs(r){localStorage.setItem('ut_reqs',JSON.stringify(r));}
+window.addEventListener('load',()=>{
+  try{window.Telegram?.WebApp?.ready();window.Telegram?.WebApp?.expand();}catch(e){}
+  setTimeout(()=>{
+    document.getElementById('splash').classList.add('hide');
+    document.getElementById('app').classList.add('show');
+    renderReqs();updateStats();
+  },1700);
+});
+function showPage(name,idx){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.tb').forEach(b=>b.classList.remove('on'));
+  document.getElementById('pg-'+name).classList.add('on');
+  document.getElementById('tb'+idx).classList.add('on');
+}
+function openFilePicker(){document.getElementById('fileInput').click();}
+function onFileChange(inp){
+  const file=inp.files[0];if(!file)return;
+  const wrap=document.getElementById('prevWrap');
+  const vid=document.getElementById('vidPrev');
+  const img=document.getElementById('imgPrev');
+  const nm=document.getElementById('prevName');
+  wrap.classList.add('show');
+  nm.textContent='📁 '+file.name+'  ('+(file.size/1024/1024).toFixed(1)+' MB)';
+  const url=URL.createObjectURL(file);
+  if(file.type.startsWith('video/')){vid.src=url;vid.style.display='block';img.style.display='none';}
+  else{img.src=url;img.style.display='block';vid.style.display='none';}
+  document.querySelector('#upbtn span:nth-child(2)').textContent='✅ Fayl tanlandi';
+}
+function clearFile(){
+  document.getElementById('fileInput').value='';
+  document.getElementById('prevWrap').classList.remove('show');
+  document.getElementById('vidPrev').src='';
+  document.getElementById('imgPrev').src='';
+  document.querySelector('#upbtn span:nth-child(2)').textContent='Video yoki Rasm tanlang';
+}
+async function doSubmit(){
+  const file=document.getElementById('fileInput').files[0];
+  if(!file){toast('⚠️ Avval fayl tanlang!');return;}
+  const btn=document.getElementById('sbtn');
+  btn.disabled=true;btn.innerHTML='<span class="spin"></span>YUBORILMOQDA...';
+  await new Promise(r=>setTimeout(r,1400));
+  const reqs=getReqs();
+  reqs.unshift({id:Date.now(),from:window.Telegram?.WebApp?.initDataUnsafe?.user?.first_name||'Foydalanuvchi',uid:window.Telegram?.WebApp?.initDataUnsafe?.user?.id||'—',file:file.name,type:file.type,comment:document.getElementById('comment').value.trim()||"(izoh yo'q)",time:new Date().toLocaleString('uz-UZ'),status:'pending'});
+  saveReqs(reqs);updateStats();renderReqs();
+  btn.disabled=false;btn.innerHTML='✈️ ADMINGA YUBORISH';
+  clearFile();document.getElementById('comment').value='';
+  const s=document.getElementById('succMsg');
+  s.classList.add('show');setTimeout(()=>s.classList.remove('show'),4500);
+}
+function doLogin(){
+  const l=document.getElementById('lu').value.trim();
+  const p=document.getElementById('lp').value;
+  const c=getCreds();const err=document.getElementById('lerr');
+  if(l===c.l&&p===c.p){
+    err.classList.remove('show');
+    document.getElementById('loginWrap').style.display='none';
+    document.getElementById('apanel').classList.add('show');
+    document.getElementById('nlogin').value=c.l;
+    toast('✅ Xush kelibsiz, Admin!');
+  }else{
+    err.classList.add('show');
+    document.getElementById('lp').value='';
+    setTimeout(()=>err.classList.remove('show'),2500);
+  }
+}
+function doLogout(){
+  document.getElementById('loginWrap').style.display='block';
+  document.getElementById('apanel').classList.remove('show');
+  document.getElementById('lu').value='';document.getElementById('lp').value='';
+}
+let logoMode='text';let logoImgData=null;
+function setLogoMode(m){
+  logoMode=m;
+  document.getElementById('ltxt-btn').classList.toggle('on',m==='text');
+  document.getElementById('limg-btn').classList.toggle('on',m==='img');
+  document.getElementById('ltxt-wrap').classList.toggle('hidden',m!=='text');
+  document.getElementById('limg-wrap').classList.toggle('hidden',m!=='img');
+  renderLogoPrev();
+}
+function renderLogoPrev(){
+  const prev=document.getElementById('logoPrev');
+  if(logoMode==='text'){
+    const t=document.getElementById('ltxt').value||'URGUT TODAY';
+    prev.innerHTML='<div class="logo-prev-txt"><svg width="22" height="22" viewBox="0 0 100 100" fill="none"><path d="M76 24L18 47L41 53L52 80L61 57L76 24Z" fill="white"/></svg>'+t+'</div>';
+  }else if(logoImgData){
+    prev.innerHTML='<img src="'+logoImgData+'" style="max-width:140px;max-height:60px">';
+  }else{
+    prev.innerHTML='<span style="color:#555;font-size:13px">Rasm tanlanmagan</span>';
+  }
+}
+function openLogoPicker(){document.getElementById('logoFile').click();}
+function onLogoFile(inp){
+  const f=inp.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=e=>{logoImgData=e.target.result;renderLogoPrev();};
+  r.readAsDataURL(f);
+}
+function saveLogo(){
+  localStorage.setItem('ut_logo',JSON.stringify({mode:logoMode,text:document.getElementById('ltxt').value||'URGUT TODAY',img:logoImgData}));
+  toast('✅ Logo saqlandi!');
+}
+function changePass(){
+  const nl=document.getElementById('nlogin').value.trim();
+  const np=document.getElementById('npass').value;
+  const np2=document.getElementById('npass2').value;
+  if(!nl||!np){toast("⚠️ Barcha maydonlarni to'ldiring!");return;}
+  if(np!==np2){toast('⚠️ Parollar mos emas!');return;}
+  if(np.length<6){toast("⚠️ Parol kamida 6 belgi bo'lsin!");return;}
+  saveCreds(nl,np);
+  document.getElementById('npass').value='';
+  document.getElementById('npass2').value='';
+  toast('✅ Login va parol yangilandi!');
+}
+function updateStats(){
+  const r=getReqs();
+  document.getElementById('sTot').textContent=r.length;
+  document.getElementById('sPnd').textContent=r.filter(x=>x.status==='pending').length;
+}
+function renderReqs(){
+  const reqs=getReqs();const el=document.getElementById('rlist');
+  if(!reqs.length){el.innerHTML='<div style="text-align:center;padding:28px;color:var(--muted);font-size:14px">Hali so\'rovlar yo\'q</div>';return;}
+  el.innerHTML=reqs.map(r=>'<div class="rcard"><div class="rmeta"><span class="rfrom">👤 '+r.from+'</span><span class="rtime">'+r.time+'</span></div><div class="rcmt">'+r.comment+'</div><div class="rfile">'+(r.type.startsWith('video/')? '🎬':'🖼️')+' '+r.file+'</div>'+(r.status==='pending'?'<div class="ract"><button class="rbtn ok" onclick="setReqStatus('+r.id+',\'approved\')">✅ Tasdiqlash</button><button class="rbtn no" onclick="setReqStatus('+r.id+',\'rejected\')">❌ Rad etish</button></div>':'<div class="rstatus" style="color:'+(r.status==='approved'?'var(--green)':'var(--red)')+'>">'+(r.status==='approved'?'✅ Tasdiqlangan':'❌ Rad etilgan')+'</div>')+'</div>').join('');
+}
+function setReqStatus(id,s){
+  const reqs=getReqs();const r=reqs.find(x=>x.id===id);
+  if(r)r.status=s;saveReqs(reqs);updateStats();renderReqs();
+  toast(s==='approved'?'✅ Tasdiqlandi!':'❌ Rad etildi');
+}
+function togglePw(id,btn){
+  const i=document.getElementById(id);
+  i.type=i.type==='password'?'text':'password';
+  btn.textContent=i.type==='password'?'👁':'🙈';
+}
+let tt;
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),3000);
+}
+</script>
+</body>
+</html>
+  
